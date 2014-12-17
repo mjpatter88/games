@@ -27,22 +27,52 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/square.png").convert()
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
-        self.rect.x = MARGIN
-        self.rect.y = MARGIN
+        self.rect.x = MARGIN + 10*CELL_DIM
+        self.rect.y = MARGIN + 10*CELL_DIM
 
     def change_dir(self, new_dir):
         self.next_dir = new_dir
 
     def update(self):
-        # In the future have a speed variable that gets faster
 
         limit = CELL_DIM / SPEED
 
         if(self.movement_clock < limit):
             self.movement_clock += 1
         else:
-            self.movement_clock = 0
+            self.movement_clock = 1
             self.cur_dir = self.next_dir
+
+        if self.cur_dir == 1:
+            self.rect.x += SPEED
+        elif self.cur_dir == 2:
+            self.rect.y += SPEED
+        elif self.cur_dir == 3:
+            self.rect.x -= SPEED
+        elif self.cur_dir == 4:
+            self.rect.y -= SPEED
+
+class TailPiece(pygame.sprite.Sprite):
+
+    # 0 - no movement
+    # 1 - right
+    # 2 - down
+    # 3 - left
+    # 4 - up
+    cur_dir = 0
+
+    def __init__(self, x, y):
+        super(TailPiece, self).__init__()
+        self.image = pygame.image.load("images/square.png").convert()
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def change_dir(self, new_dir):
+        self.next_dir = new_dir
+
+    def update(self):
 
         if self.cur_dir == 1:
             self.rect.x += SPEED
@@ -66,10 +96,18 @@ def snake(screen):
     '''
     running = True
     clock = pygame.time.Clock()
-    player = Player()
-
     sprite_list = pygame.sprite.Group()
+
+    player = Player()
     sprite_list.add(player)
+
+    tail = [] # A list of the tail sections. Start with 3.
+    for x in xrange(3):
+        new_section = TailPiece(player.rect.x - (x+1)*CELL_DIM, player.rect.y)
+        tail.append(new_section)
+        sprite_list.add(new_section)
+
+
 
     while running:
         for event in pygame.event.get():
