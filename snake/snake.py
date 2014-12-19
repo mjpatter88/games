@@ -1,8 +1,10 @@
 #!/usr/bin/python
 import pygame
+import random
 
 # Define constants
 MARGIN = 3
+FOOD_MARGIN = 8
 BLOCK_WIDTH = 32
 CELL_DIM = BLOCK_WIDTH + 2 * MARGIN
 WIDTH_IN_CELLS = 30
@@ -10,7 +12,7 @@ HEIGHT_IN_CELLS = 20
 SCREEN_WIDTH = WIDTH_IN_CELLS * CELL_DIM
 SCREEN_HEIGHT = HEIGHT_IN_CELLS * CELL_DIM
 SPEED = 2 # Always make speed a factor of "CELL_DIM" so things stay aligned.
-START_LEN = 4 # Inlucding the head tile even though it's not part of the tail.
+START_LEN = 10 # Inlucding the head tile even though it's not part of the tail.
 
 class Player(pygame.sprite.Sprite):
 
@@ -98,6 +100,21 @@ class TailPiece(pygame.sprite.Sprite):
         elif self.movement_list[self.index] == 4:
             self.rect.y -= SPEED
 
+class Food(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super(Food, self).__init__()
+        self.image = pygame.image.load("images/food.png").convert()
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+def rand_food_coords():
+    x = random.randint(0, WIDTH_IN_CELLS)
+    y = random.randint(0, HEIGHT_IN_CELLS)
+    x_coord = FOOD_MARGIN + x*CELL_DIM
+    y_coord = FOOD_MARGIN + y*CELL_DIM
+    return x_coord, y_coord
 
 def menu(screen):
     '''
@@ -115,9 +132,11 @@ def snake(screen):
     clock = pygame.time.Clock()
     sprite_list = pygame.sprite.Group()
 
+    # Add the player
     player = Player()
     sprite_list.add(player)
 
+    # Add the tail
     tail = [] # A list of the tail sections. Start with START_LEN.
     for x in xrange(1, START_LEN):
         new_section = TailPiece(tail_index, player.rect.x - x*CELL_DIM, player.rect.y,
@@ -126,8 +145,11 @@ def snake(screen):
         sprite_list.add(new_section)
         tail_index += 1
 
+    # Add the food
+    food = Food(*rand_food_coords()) # * operator unpacks the tuple
+    sprite_list.add(food)
 
-
+    # Main game loop
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -147,6 +169,26 @@ def snake(screen):
         player.update()
         for t in tail:
             t.update()
+
+        # Handle collisions with the snake
+        tail_hits = pygame.sprite.spritecollide(player, tail[1:], False)
+        # don't include the first piece of the tail
+        # the overlap isn't a real collision
+        if tail_hits:
+            running = False
+
+        # Handle collisions with the walls
+        
+
+        # Handle collisions with the food
+        point = pygame.sprite.collide_mask(player, food)
+        # TODO: analyze the performance of this call
+        # Create a sprite mask at load time to increase performance?
+        if point:
+            food.rect.x, food.rect.y = rand_food_coords()
+            print "Here"
+
+        # Draw the next frame
         screen.fill((0, 0, 0))
         sprite_list.draw(screen)
         pygame.display.flip()
