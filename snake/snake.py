@@ -184,9 +184,10 @@ def snake(screen):
         point = pygame.sprite.collide_mask(player, food)
         # TODO: analyze the performance of this call
         # Create a sprite mask at load time to increase performance?
+        
         if point:
             food.rect.x, food.rect.y = rand_food_coords()
-            print "Here"
+            # print "Here"
 
         # Draw the next frame
         screen.fill((0, 0, 0))
