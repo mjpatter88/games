@@ -93,7 +93,7 @@ while not done:
 
     all_list.draw(screen)
     clock.tick(60)
-    print(clock.get_fps())
+    # print(clock.get_fps())
     pygame.display.flip()
 
 pygame.quit()
