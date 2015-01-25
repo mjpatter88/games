@@ -14,8 +14,8 @@ SCREEN_HEIGHT = HEIGHT_IN_CELLS * CELL_DIM
 SPEED = 2 # Always make speed a factor of "CELL_DIM" so things stay aligned.
 START_LEN = 10 # Inlucding the head tile even though it's not part of the tail.
 
-class Player(pygame.sprite.Sprite):
 
+class Player(pygame.sprite.Sprite):
     # 0 - no movement
     # 1 - right
     # 2 - down
@@ -68,7 +68,6 @@ class Player(pygame.sprite.Sprite):
 
 
 class TailPiece(pygame.sprite.Sprite):
-
     # 0 - no movement
     # 1 - right
     # 2 - down
@@ -89,7 +88,6 @@ class TailPiece(pygame.sprite.Sprite):
         self.index = index
 
     def update(self):
-
         if self.movement_list[self.index] == 1:
             self.rect.x += SPEED
         elif self.movement_list[self.index] == 2:
@@ -99,6 +97,7 @@ class TailPiece(pygame.sprite.Sprite):
         elif self.movement_list[self.index] == 4:
             self.rect.y -= SPEED
 
+
 class Food(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super(Food, self).__init__()
@@ -107,6 +106,7 @@ class Food(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+
 
 def rand_food_coords():
     x = random.randint(0, WIDTH_IN_CELLS - 1)
@@ -130,6 +130,7 @@ def snake(screen):
     score = 0
     myFont = pygame.font.SysFont("monospace", 30)
     running = True
+    addTailPiece = False # Set to true to add a tail piece
     clock = pygame.time.Clock()
     sprite_list = pygame.sprite.Group()
 
@@ -187,11 +188,16 @@ def snake(screen):
         point = pygame.sprite.collide_mask(player, food)
         # TODO: analyze the performance of this call
         # Create a sprite mask at load time to increase performance?
-        
         if point:
             food.rect.x, food.rect.y = rand_food_coords()
             score = score + 10
             score_label = myFont.render(("Score: " + str(score)), 1, (255, 255, 255))
+            # Make call (see below)
+
+        # Add tail if needed and able
+        # TODO: Refactor so the player class owns the "tail" list, adds to the tail, etc.
+        # Here just call a method on the player to add a piece to the tail when ready.
+            print "Tail add"
 
         # Draw the next frame
         screen.fill((0, 0, 0))
@@ -201,7 +207,6 @@ def snake(screen):
         clock.tick(60)
 
     pygame.quit()
-
 
 def main():
     pygame.init()
