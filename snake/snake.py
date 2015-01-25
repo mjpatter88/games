@@ -57,7 +57,6 @@ class Player(pygame.sprite.Sprite):
 
             self.movement_list.insert(0, self.cur_dir)
 
-
         if self.cur_dir == 1:
             self.rect.x += SPEED
         elif self.cur_dir == 2:
@@ -110,8 +109,8 @@ class Food(pygame.sprite.Sprite):
         self.rect.y = y
 
 def rand_food_coords():
-    x = random.randint(0, WIDTH_IN_CELLS)
-    y = random.randint(0, HEIGHT_IN_CELLS)
+    x = random.randint(0, WIDTH_IN_CELLS - 1)
+    y = random.randint(0, HEIGHT_IN_CELLS - 1)
     x_coord = FOOD_MARGIN + x*CELL_DIM
     y_coord = FOOD_MARGIN + y*CELL_DIM
     return x_coord, y_coord
@@ -128,6 +127,8 @@ def snake(screen):
     The main game where the player moves around the snake.
     '''
     tail_index = 1
+    score = 0
+    myFont = pygame.font.SysFont("monospace", 30)
     running = True
     clock = pygame.time.Clock()
     sprite_list = pygame.sprite.Group()
@@ -149,6 +150,9 @@ def snake(screen):
     food = Food(*rand_food_coords()) # * operator unpacks the tuple
     sprite_list.add(food)
 
+    # Create the label for the score
+    score_label = myFont.render("Score: ", 1, (255, 255, 255))
+
     # Main game loop
     while running:
         for event in pygame.event.get():
@@ -165,7 +169,6 @@ def snake(screen):
                 elif event.key == pygame.K_UP:
                     player.change_dir(4)
 
-
         player.update()
         for t in tail:
             t.update()
@@ -177,7 +180,7 @@ def snake(screen):
         if tail_hits:
             running = False
 
-        # Handle collisions with the walls
+        # Handle collisions with the walls (warp or die?)
         
 
         # Handle collisions with the food
@@ -187,10 +190,12 @@ def snake(screen):
         
         if point:
             food.rect.x, food.rect.y = rand_food_coords()
-            # print "Here"
+            score = score + 10
+            score_label = myFont.render(("Score: " + str(score)), 1, (255, 255, 255))
 
         # Draw the next frame
         screen.fill((0, 0, 0))
+        screen.blit(score_label, (10, 10))
         sprite_list.draw(screen)
         pygame.display.flip()
         clock.tick(60)
