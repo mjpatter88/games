@@ -25,6 +25,7 @@ class Player(pygame.sprite.Sprite):
     next_dir = 0
     movement_clock = 0
     movement_list = [] # Holds the past moves so the tail can follow
+    tail = [] # Holds the list of tail pieces
     not_moved = True
 
     def __init__(self):
@@ -35,6 +36,25 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = MARGIN + 10*CELL_DIM
         self.rect.y = MARGIN + 10*CELL_DIM
         self.movement_list = [0] * START_LEN
+        self.tail_index = 1
+
+    def create_initial_tail(self):
+        # Add the beginning tail. Start with START_LEN
+        for x in xrange(1, START_LEN):
+            new_section = TailPiece(self.tail_index, self.rect.x - x*CELL_DIM, self.rect.y,
+                                    self.movement_list)
+            self.tail.append(new_section)
+            self.tail_index += 1
+        return self.tail
+
+    def extend_tail(self):
+        print "Tail add"
+        # TODO: Start here. Create the new tail section, add it, return it, etc.
+        # Give it the same movement as the old last tail section?
+        # Base its location off the old last tail section position and direction?
+        # Goal is so it is put in the same square that the old last one was when fruit was hit.
+        new_section = True
+        return new_section
 
     def change_dir(self, new_dir):
         self.next_dir = new_dir
@@ -48,6 +68,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.movement_clock = 1
             self.cur_dir = self.next_dir
+            self.movement_list.insert(0, self.cur_dir)
 
             # Only do for the first move. Start moving right
             if self.not_moved and self.cur_dir != 0:
@@ -55,7 +76,6 @@ class Player(pygame.sprite.Sprite):
                     self.movement_list.insert(0, 1)
                 self.not_moved = False
 
-            self.movement_list.insert(0, self.cur_dir)
 
         if self.cur_dir == 1:
             self.rect.x += SPEED
@@ -65,6 +85,10 @@ class Player(pygame.sprite.Sprite):
             self.rect.x -= SPEED
         elif self.cur_dir == 4:
             self.rect.y -= SPEED
+
+        # Update each of the tail sections
+        for t in self.tail:
+            t.update()
 
 
 class TailPiece(pygame.sprite.Sprite):
@@ -126,7 +150,6 @@ def snake(screen):
     '''
     The main game where the player moves around the snake.
     '''
-    tail_index = 1
     score = 0
     myFont = pygame.font.SysFont("monospace", 30)
     running = True
@@ -134,18 +157,13 @@ def snake(screen):
     clock = pygame.time.Clock()
     sprite_list = pygame.sprite.Group()
 
-    # Add the player
+    # Add the player and the tail
     player = Player()
     sprite_list.add(player)
+    tail = player.create_initial_tail()
+    for piece in tail:
+        sprite_list.add(piece)
 
-    # Add the tail
-    tail = [] # A list of the tail sections. Start with START_LEN.
-    for x in xrange(1, START_LEN):
-        new_section = TailPiece(tail_index, player.rect.x - x*CELL_DIM, player.rect.y,
-                                player.movement_list)
-        tail.append(new_section)
-        sprite_list.add(new_section)
-        tail_index += 1
 
     # Add the food
     food = Food(*rand_food_coords()) # * operator unpacks the tuple
@@ -171,8 +189,6 @@ def snake(screen):
                     player.change_dir(4)
 
         player.update()
-        for t in tail:
-            t.update()
 
         # Handle collisions with the snake
         tail_hits = pygame.sprite.spritecollide(player, tail[1:], False)
@@ -192,17 +208,12 @@ def snake(screen):
             food.rect.x, food.rect.y = rand_food_coords()
             score = score + 10
             score_label = myFont.render(("Score: " + str(score)), 1, (255, 255, 255))
-            # Make call (see below)
-
-        # Add tail if needed and able
-        # TODO: Refactor so the player class owns the "tail" list, adds to the tail, etc.
-        # Here just call a method on the player to add a piece to the tail when ready.
-            print "Tail add"
+            player.extend_tail()
 
         # Draw the next frame
         screen.fill((0, 0, 0))
-        screen.blit(score_label, (10, 10))
         sprite_list.draw(screen)
+        screen.blit(score_label, (10, 10))
         pygame.display.flip()
         clock.tick(60)
 
