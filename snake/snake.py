@@ -23,6 +23,7 @@ class Game():
         self.score = 0
         self.scoreFont = pygame.font.SysFont("monospace", 30)
         self.running = False
+        self.sprite_list = pygame.sprite.Group()
 
     def gen_rand_food_coords(self):
         x = random.randint(0, WIDTH_IN_CELLS - 1)
@@ -44,19 +45,18 @@ class Game():
         '''
         self.running = True
         clock = pygame.time.Clock()
-        sprite_list = pygame.sprite.Group()
 
         # Add the player and the tail
-        player = Player()
-        sprite_list.add(player)
+        player = Player(self)
+        self.sprite_list.add(player)
         tail = player.create_initial_tail()
         for piece in tail:
-            sprite_list.add(piece)
+            self.sprite_list.add(piece)
 
 
         # Add the food
         food = Food(*self.gen_rand_food_coords()) # * operator unpacks the tuple
-        sprite_list.add(food)
+        self.sprite_list.add(food)
 
         # Create the label for the score
         score_label = self.scoreFont.render("Score: ", 1, (255, 255, 255))
@@ -101,7 +101,7 @@ class Game():
 
             # Draw the next frame
             self.screen.fill((0, 0, 0))
-            sprite_list.draw(self.screen)
+            self.sprite_list.draw(self.screen)
             self.screen.blit(score_label, (10, 10))
             pygame.display.flip()
             clock.tick(60)
@@ -116,8 +116,9 @@ class Player(pygame.sprite.Sprite):
     # 3 - left
     # 4 - up
 
-    def __init__(self):
+    def __init__(self, game):
         super(Player, self).__init__()
+        self.game = game
         self.image = pygame.image.load("images/square.png").convert()
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
@@ -130,6 +131,7 @@ class Player(pygame.sprite.Sprite):
         self.next_dir = 0
         self.movement_clock = 0
         self.not_moved = True
+        self.add_tail = False
 
     def create_initial_tail(self):
         # Add the beginning tail. Start with START_LEN
@@ -146,19 +148,35 @@ class Player(pygame.sprite.Sprite):
             at the proper time.
         '''
         print "Tail add"
-        # TODO: Start here. Create the new tail section, add it, return it, etc.
-        # Give it the same movement as the old last tail section?
-        # Base its location off the old last tail section position and direction?
+        self.add_tail = True
+
+    def add_tail_section(self):
+        print "Tail added"
+        self.add_tail = False
+        # Create the new tail section.
+        # Give it the same movement as the old last tail section
+        # Base its location off the old last tail section position and direction
         # Goal is so it is put in the same square that the old last one was when fruit was hit.
-        new_section = True
-        return new_section
+        cur_dir_to_x_factor = [0, -1, 0, 1, 0] # The new position is based on the direction,
+        cur_dir_to_y_factor = [0, 0, -1, 0, 1] # so these make conversion easier
+        old_last_tail = self.tail[self.tail_index - 2] # -2 since index starts at 1
+        old_last_tail_move = old_last_tail.movement_list[old_last_tail.index] 
+        new_x = old_last_tail.rect.x + (cur_dir_to_x_factor[old_last_tail_move] * CELL_DIM)
+        new_y = old_last_tail.rect.y + (cur_dir_to_y_factor[old_last_tail_move] * CELL_DIM)
+        new_section = TailPiece(self.tail_index, new_x, new_y, self.movement_list)
+        self.movement_list.insert(self.tail_index, old_last_tail_move)
+        self.tail.append(new_section)
+        self.tail_index += 1
+        self.game.sprite_list.add(new_section)
 
     def change_dir(self, new_dir):
         self.next_dir = new_dir
 
     def update(self):
-
-        limit = CELL_DIM / SPEED
+        '''
+        This function runs every frame. It updates the position, etc.
+        '''
+        limit = CELL_DIM / SPEED # synchronize turns, tail adds, etc. with the cell edges
 
         if(self.movement_clock < limit):
             self.movement_clock += 1
@@ -176,6 +194,8 @@ class Player(pygame.sprite.Sprite):
             # Otherwise the tail will always be one move behind
             self.movement_list.insert(0, self.cur_dir)
 
+            if self.add_tail:
+                self.add_tail_section()
 
         if self.cur_dir == 1:
             self.rect.x += SPEED
@@ -197,7 +217,6 @@ class TailPiece(pygame.sprite.Sprite):
     # 2 - down
     # 3 - left
     # 4 - up
-
     def __init__(self, index, x, y, moves):
         super(TailPiece, self).__init__()
         self.image = pygame.image.load("images/square.png").convert()
@@ -228,7 +247,6 @@ class Food(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-
 
 
 def main():
