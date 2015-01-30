@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import pygame
 import random
+import sqlite3
 
 # Define constants
 MARGIN = 4
@@ -15,6 +16,7 @@ EASY_SPEED = 2 # Always make speed a factor of "CELL_DIM" so things stay aligned
 MED_SPEED = 4 
 HARD_SPEED = 8
 START_LEN = 10 # Inlucding the head tile even though it's not part of the tail.
+DB_NAME = "snake.db"
 
 class Game():
     def __init__(self):
@@ -23,11 +25,17 @@ class Game():
         self.screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
         pygame.display.set_caption(self.name)
         self.score = 0
-        self.scoreFont = pygame.font.SysFont("monospace", 30)
+        self.myFont = pygame.font.SysFont("monospace", 30)
         self.running = False
         self.sprite_list = pygame.sprite.Group()
         self.speed = HARD_SPEED
         self.bonus = 0 # Bonus points given based on how quickly fruit is captured
+        # If it doesn't exist, create a high scores database
+        self.dbConnection = sqlite3.connect(DB_NAME)
+        self.dbCursor = self.dbConnection.cursor()
+        self.dbCursor.execute('''CREATE TABLE IF NOT EXISTS high_scores
+                     (score INTEGER, name TEXT, date TEXT)''')
+        #TODO: Here look for a high score in the db, etc
 
     def gen_rand_food_coords(self):
         x = random.randint(0, WIDTH_IN_CELLS - 1)
@@ -65,8 +73,9 @@ class Game():
         #TODO: make sure the fruit doesn't get added on the tail.
 
         # Create the label for the score and the bonus
-        score_label = self.scoreFont.render("Score: ", 1, (255, 255, 255))
-        bonus_label = self.scoreFont.render("Bonus: ", 1, (255, 255, 255))
+        score_label = self.myFont.render("Score: ", 1, (255, 255, 255))
+        bonus_label = self.myFont.render("Bonus: ", 1, (255, 255, 255))
+        high_score_label = self.myFont.render("High Score: ", 1, (255, 255, 255))
 
         # Main game loop
         while self.running:
@@ -106,18 +115,20 @@ class Game():
                 #TODO: make sure the fruit doesn't get added on the tail.
                 self.score = self.score + 10 + self.bonus + random.randint(0, 5)
                 self.bonus = 5 * player.get_length() + self.bonus # Add in the remaining old bonus
-                score_label = self.scoreFont.render(("Score: " + str(self.score)), 1, (255, 255, 255))
+                score_label = self.myFont.render(("Score: " + str(self.score)), 1, (255, 255, 255))
                 player.extend_tail()
 
             # Draw the next frame
-            bonus_label = self.scoreFont.render(("Bonus: " + str(self.bonus)), 1, (255, 255, 255))
+            bonus_label = self.myFont.render(("Bonus: " + str(self.bonus)), 1, (255, 255, 255))
             self.screen.fill((0, 0, 0))
             self.sprite_list.draw(self.screen)
             self.screen.blit(score_label, (10, 10))
             self.screen.blit(bonus_label, (SCREEN_WIDTH - 200, 10))
+            self.screen.blit(high_score_label, (SCREEN_WIDTH/2 - 200, 10))
             pygame.display.flip()
             clock.tick(60)
 
+        self.dbConnection.close()
         pygame.quit()
 
 
