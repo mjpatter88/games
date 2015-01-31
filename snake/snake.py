@@ -30,12 +30,17 @@ class Game():
         self.sprite_list = pygame.sprite.Group()
         self.speed = HARD_SPEED
         self.bonus = 0 # Bonus points given based on how quickly fruit is captured
+
         # If it doesn't exist, create a high scores database
         self.dbConnection = sqlite3.connect(DB_NAME)
         self.dbCursor = self.dbConnection.cursor()
         self.dbCursor.execute('''CREATE TABLE IF NOT EXISTS high_scores
                      (score INTEGER, name TEXT, date TEXT)''')
-        #TODO: Here look for a high score in the db, etc
+        self.dbConnection.commit()
+        
+        # Look for an existing high score if it exists
+        self.dbCursor.execute('''SELECT * FROM high_scores ORDER BY score DESC''')
+        self.high_score = self.dbCursor.fetchone()[0]
 
     def gen_rand_food_coords(self):
         x = random.randint(0, WIDTH_IN_CELLS - 1)
@@ -44,6 +49,16 @@ class Game():
         y_coord = FOOD_MARGIN + y*CELL_DIM
         return x_coord, y_coord
 
+    def set_new_high_score(self):
+        test_date = "1 - 1 - 2001"
+        test_name = "AAA"
+        self.dbCursor.execute('''INSERT INTO high_scores(score, name, date) 
+                                VALUES(?,?,?)''', (self.score, test_name, test_date))
+        self.dbConnection.commit()
+
+    def clear_high_scores(self):
+        pass
+
     def menu(self):
         '''
         If needed, include the menu logic here. Once the user starts the game, call
@@ -51,6 +66,14 @@ class Game():
         '''
         # TODO: implement a basic menu allowing the user to change speed
         # TODO: pause functionality?
+        self.game_loop()
+
+    def end_menu(self):
+        '''
+        A post game menu displaying the player's score and the list of high scores.
+        Press space to play again.
+        '''
+        #TODO: this
         self.game_loop()
 
     def game_loop(self):
@@ -75,7 +98,8 @@ class Game():
         # Create the label for the score and the bonus
         score_label = self.myFont.render("Score: ", 1, (255, 255, 255))
         bonus_label = self.myFont.render("Bonus: ", 1, (255, 255, 255))
-        high_score_label = self.myFont.render("High Score: ", 1, (255, 255, 255))
+        high_score_label = self.myFont.render("High Score: " + str(self.high_score), 
+                                                    1, (255, 255, 255))
 
         # Main game loop
         while self.running:
@@ -128,6 +152,10 @@ class Game():
             pygame.display.flip()
             clock.tick(60)
 
+        if(self.score > self.high_score):
+            print "New High Score"
+            self.set_new_high_score()
+            #TODO: Have the user input their initials (make it look like arcade style)
         self.dbConnection.close()
         pygame.quit()
 
