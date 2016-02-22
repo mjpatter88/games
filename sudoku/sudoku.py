@@ -156,8 +156,10 @@ class SudokuUI(Frame):
             row, col = (y - MARGIN) / SIDE, (x - MARGIN) / SIDE
             if (row, col) == (self.row, self.col):
                 self.row, self.col = -1, -1
-            elif self.game.puzzle[row][col] == 0:
+            elif self.game.puzzle[row][col] == 0 or self.game.puzzle[row][col] != self.game.start_puzzle[row][col]:
                 self.row, self.col = row, col
+        else:
+            self.row, self.col = -1, -1
 
         self.__draw_cursor()
 
